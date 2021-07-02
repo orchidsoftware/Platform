@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Orchid\Platform\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Orchid\Platform\Dashboard;
 use Orchid\Platform\Events\InstallEvent;
 use Orchid\Platform\Providers\FoundationServiceProvider;
+use ReflectionClass;
+use ReflectionException;
 
 class InstallCommand extends Command
 {
@@ -72,7 +75,7 @@ class InstallCommand extends Command
     {
         try {
             $result = $this->call($command, $parameters);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             $result = 1;
             $this->alert($exception->getMessage());
         }
@@ -86,21 +89,26 @@ class InstallCommand extends Command
         return $this;
     }
 
-    private function changeUserModel(string $path = 'Models/User.php')
+    /**
+     * @throws ReflectionException
+     */
+    private function changeUserModel(): void
     {
-        $this->info('Attempting to set ORCHID User model as parent to App\User');
+        try {
+            $provider = config('auth.guards.web.provider');
+            $model = config("auth.providers.$provider.model");
+            $path = (new ReflectionClass($model))->getFileName();
 
-        if (! file_exists(app_path($path))) {
+            $user = file_get_contents(Dashboard::path('stubs/app/User.stub'));
+            file_put_contents($path, $user);
+
+            $this->info('Attempting to set ORCHID User model as parent to App\User');
+        } catch (Exception $exception) {
             $this->warn('Unable to locate "app/Models/User.php".  Did you move this file?');
             $this->warn('You will need to update this manually.');
             $this->warn('Change "extends Authenticatable" to "extends \Orchid\Platform\Models\User" in your User model');
             $this->warn('Also pay attention to the properties so that they are not overwritten.');
-
-            return;
         }
-
-        $user = file_get_contents(Dashboard::path('stubs/app/User.stub'));
-        file_put_contents(app_path($path), $user);
     }
 
     /**
