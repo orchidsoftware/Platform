@@ -20,6 +20,12 @@ class HttpFilter
     private const VALID_COLUMN_NAME_REGEX = '/^(?![\d])[A-Za-z0-9_>-]*$/';
 
     /**
+     * Date range looks like "YYYY-MM-DD to YYYY-MM-DD"
+     */
+    private const VALID_DATE_RANGE_REGEX = '/\d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}/';
+    private const VALID_DATE_SINGLE_REGEX = '/\d{4}-\d{2}-\d{2}/';
+
+    /**
      * @var Request
      */
     protected $request;
@@ -133,15 +139,28 @@ class HttpFilter
     {
         $property = self::sanitize($property);
 
-        if (is_array($value)) {
-            return $query->whereIn($property, $value);
+        switch (true) {
+
+            case is_array($value):
+                $query->whereIn($property, $value);
+                break;
+
+            case is_numeric($value):
+                $query->where($property, $value);
+                break;
+
+            case preg_match(self::VALID_DATE_RANGE_REGEX, $value):
+                // extract dates
+                preg_match_all(self::VALID_DATE_SINGLE_REGEX, $value, $match);
+                $query->whereBetween($property, [$match[0][0]." 00:00:00", $match[0][1]." 23:59:59"]);
+                break;
+
+            default:
+                $query->where($property, 'like', "%$value%");
+
         }
 
-        if (is_numeric($value)) {
-            return $query->where($property, $value);
-        }
-
-        return $query->where($property, 'like', "%$value%");
+        return $query;
     }
 
     /**
