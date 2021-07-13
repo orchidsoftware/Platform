@@ -174,7 +174,7 @@ abstract class Screen extends Controller
         $query = ! is_array($query) ? [] : $query;
 
         $parameters = array_filter($parameters);
-        $parameters = array_merge($query, $parameters);
+        $parameters = array_merge($parameters, $query);
 
         $response = $this->callMethod($method, $parameters);
 
