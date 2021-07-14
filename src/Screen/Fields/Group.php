@@ -16,9 +16,11 @@ class Group implements Fieldable, Groupable
      * @var array
      */
     protected $attributes = [
-        'group' => [],
-        'class' => 'col',
-        'align' => 'align-items-baseline',
+        'align'      => 'align-items-baseline',
+        'class'      => 'col',
+        'group'      => [],
+        'groupClass' => 'row form-group',
+        'name'       => 'group',
     ];
 
     /**
@@ -169,6 +171,16 @@ class Group implements Fieldable, Groupable
     public function alignStart(): self
     {
         return $this->set('align', 'align-items-end');
+    }
+
+    /**
+     * Set inline buttons
+     *
+     * @return self
+     */
+    public function btnGroup(): self
+    {
+        return $this->set('groupClass', 'btn-group');
     }
 
     /**
